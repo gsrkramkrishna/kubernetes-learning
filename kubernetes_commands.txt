@@ -1,0 +1,134 @@
+Kubernetes Commands:
+
+kubectl create -f file_name.yaml
+kubectl get pods
+kubectl get pods --all-namespaces | grep blue
+kubectl get pods --namespace=research
+kubectl get svcs
+kubectl describe pod pod_name
+kubectl delete pod pod_name
+kubectl get replicaset
+kubectl get rs
+kubectl describe replicaset replicaset_name
+kubectl delete replicaset replicaset_name
+kubectl edit rs replicaset_name
+
+kubectl [command] [TYPE] [NAME] -o <output_format>
+
+-o jsonOutput a JSON formatted API object.
+
+-o namePrint only the resource name and nothing else.
+
+-o wideOutput in the plain-text format with any additional information.
+
+-o yamlOutput a YAML formatted API object.
+
+Generate POD Manifest YAML file (-o yaml). Don't create it(--dry-run)
+kubectl run nginx --image=nginx  --dry-run=client -o yaml
+
+Generate Deployment YAML file (-o yaml). Don't create it(--dry-run)
+kubectl create deployment --image=nginx nginx --dry-run -o yaml
+
+Generate Deployment with 4 Replicas
+kubectl create deployment nginx --image=nginx --replicas=4
+
+You can also scale a deployment using the kubectl scale command.
+kubectl scale deployment nginx --replicas=4
+
+Another way to do this is to save the YAML definition to a file.
+kubectl create deployment nginx --image=nginx--dry-run=client -o yaml > nginx-deployment.yaml
+
+Create a Service named redis-service of type ClusterIP to expose pod redis on port 6379
+kubectl expose pod redis --port=6379 --name redis-service --dry-run=client -o yaml
+OR
+kubectl create service clusterip redis --tcp=6379:6379 --dry-run=client -o yaml
+(This will not use the pods labels as selectors, instead it will assume selectors as app=redis. You cannot pass in selectors as an option. So it does not work very well if your pod has a different label set. So generate the file and modify the selectors before creating the service)
+
+Create a Service named nginx of type NodePort to expose pod nginx's port 80 on port 30080 on the nodes:
+kubectl expose pod nginx --port=80 --name nginx-service --type=NodePort --dry-run=client -o yaml
+(This will automatically use the pod's labels as selectors, but you cannot specify the node port. You have to generate a definition file and then add the node port in manually before creating the service with the pod.)
+Or
+
+kubectl create service nodeport nginx --tcp=80:80 --node-port=30080 --dry-run=client -o yaml
+(This will not use the pods labels as selectors)
+Both the above commands have their own challenges. While one of it cannot accept a selector the other cannot accept a node port. I would recommend going with the `kubectl expose` command. If you need to specify a node port, generate a definition file using the same command and manually input the nodeport before creating the service.
+
+kubectl run pod_name --image=nginx:alpine
+
+kubectl run pod_name --image=redis:alpine --labels=tier=db
+
+Create a service redis-service to expose the redis application within the cluster on port 6379.
+Use imperative commands.
+
+kubectl expose pod redis --name=redis-service --port=6379 --target-port=6379
+
+Create a deployment named webapp using the image kodekloud/webapp-color with 3 replicas.
+Try to use imperative commands only. Do not create definition files.
+kubectl create deployment webapp --image=kodekloud/webapp-color
+kubectl scale deployment webapp --replicas=3
+
+Create a new pod called custom-nginx using the nginx image and expose it on container port 8080.
+kubectl run custom-nginx --image=nginx --port=8080
+
+
+
+In the previous lecture, I said - "When a pod is created the containers are assigned a default CPU request of .5 and memory of 256Mi". For the POD to pick up those defaults you must have first set those as default values for request and limit by creating a LimitRange in that namespace.
+
+
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-limit-range
+spec:
+  limits:
+  - default:
+      memory: 512Mi
+    defaultRequest:
+      memory: 256Mi
+    type: Container
+	
+	
+	
+https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/memory-default-namespace/
+
+
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-limit-range
+spec:
+  limits:
+  - default:
+      cpu: 1
+    defaultRequest:
+      cpu: 0.5
+    type: Container
+https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/cpu-default-namespace/
+
+
+
+References:
+
+https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource
+
+Create a new ConfigMap for the webapp-color POD. Use the spec given below.
+ConfigName Name: webapp-config-map
+Data: APP_COLOR=darkblue
+
+kubectl create configmap webapp-config-map --from-literal=APP_COLOR=darkblue
+
+
+
+create secret generic db-secret --from-literal=DB_Host=sql01 --from-literal=DB_User=root --from-literal=DB_Password=password123
+
+kubectl explain pods --recursive | less
+
+  envFrom        <[]Object>
+            configMapRef        <Object>
+               name     <string>
+               optional <boolean>
+            prefix      <string>
+            secretRef   <Object>
+               name     <string>
